@@ -106,7 +106,6 @@ if st.button("Predict Eligibility", type="primary"):
         st.error(f"❌ **REJECTED** — Approval Confidence: {prob * 100:.1f}%")
 
 
-⠙⠹⠸
 Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
 
 ⠼⠴⠦Need to install the following packages:
