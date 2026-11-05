@@ -2,154 +2,188 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import random
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 
-st.set_page_config(page_title="Executive Neuro-Genetic Loan Predictor", page_icon="🏦", layout="wide")
+# Page Configuration
+st.set_page_config(page_title="Soft vs Hard Computing - Loan Predictor", page_icon="🧠", layout="wide")
 
-st.title("🏦 Enterprise Hybrid Neuro-Genetic Loan Decisioning System")
-st.markdown("**Core Techniques:** Multi-Layer Perceptron (Backpropagation) + Genetic Algorithm Hyperparameter Tuning + Counterfactual Analytics")
+st.title("🧠 Soft vs. Hard Computing: Loan Eligibility Evaluator")
+st.markdown("**Syllabus Coverage:** Module 1 (Hard vs. Soft Computing) & Module 2 (Backpropagation Neural Networks)")
 
-# 1. Dataset Generation
+# -------------------------------------------------------------------
+# 1. DATASET GENERATION
+# -------------------------------------------------------------------
 @st.cache_data
 def generate_data():
     np.random.seed(42)
-    n_samples = 1500
-    income = np.random.randint(25000, 200000, n_samples)
-    loan = np.random.randint(10000, 600000, n_samples)
+    n_samples = 1200
+    
+    income = np.random.randint(20000, 150000, n_samples)
+    loan = np.random.randint(5000, 500000, n_samples)
     score = np.random.randint(300, 850, n_samples)
-    dti = np.random.uniform(0.05, 0.65, n_samples)
-    employment_yrs = np.random.randint(0, 30, n_samples)
-    savings = np.random.randint(1000, 100000, n_samples)
+    dti = np.random.uniform(0.1, 0.6, n_samples)
 
+    # Complex non-linear target variable with noise (Soft Computing Domain)
     approved = (
-        (score > 620) & 
-        (dti < 0.48) & 
-        (loan < (income * 4.5 + savings * 1.5)) & 
-        (employment_yrs >= 1)
+        (score > 630) & 
+        (dti < 0.45) & 
+        (loan < income * 4.2)
     ).astype(int)
 
+    # Add 5% noise to simulate real-world imprecise data
+    noise_idx = np.random.choice(n_samples, size=int(n_samples * 0.05), replace=False)
+    approved[noise_idx] = 1 - approved[noise_idx]
+
     return pd.DataFrame({
-        'Income': income, 'LoanAmount': loan, 'CreditScore': score,
-        'DTIRatio': dti, 'EmploymentYears': employment_yrs, 'Savings': savings,
+        'Income': income,
+        'LoanAmount': loan,
+        'CreditScore': score,
+        'DTIRatio': dti,
         'Approved': approved
     })
 
 df = generate_data()
-X = df[['Income', 'LoanAmount', 'CreditScore', 'DTIRatio', 'EmploymentYears', 'Savings']]
+X = df[['Income', 'LoanAmount', 'CreditScore', 'DTIRatio']]
 y = df['Approved']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# 2. Genetic Algorithm Engine
-ACTIVATIONS = ['relu', 'tanh']
-LEARNING_RATES = [0.001, 0.01, 0.05]
+# -------------------------------------------------------------------
+# 2. MODULE 1: HARD COMPUTING MODEL (CRISP / RULE-BASED)
+# -------------------------------------------------------------------
+def hard_computing_predict(income, loan, score, dti):
+    # Strict binary thresholding (Hard Computing: Crisp logic, zero tolerance for noise)
+    if score >= 650 and dti <= 0.40 and loan <= (income * 4.0):
+        return 1
+    else:
+        return 0
 
-def evaluate_chromosome(chrom):
-    l1, l2, lr_idx, act_idx = chrom
-    try:
-        clf = MLPClassifier(hidden_layer_sizes=(l1, l2), activation=ACTIVATIONS[act_idx],
-                            learning_rate_init=LEARNING_RATES[lr_idx], max_iter=150, random_state=42)
-        clf.fit(X_train_scaled, y_train)
-        return accuracy_score(y_test, clf.predict(X_test_scaled))
-    except:
-        return 0.0
+hard_preds = [hard_computing_predict(row['Income'], row['LoanAmount'], row['CreditScore'], row['DTIRatio']) for _, row in X_test.iterrows()]
+hard_accuracy = accuracy_score(y_test, hard_preds)
 
+# -------------------------------------------------------------------
+# 3. MODULE 2: SIDEBAR NEURAL NETWORK HYPERPARAMETER TUNING
+# -------------------------------------------------------------------
+st.sidebar.title("⚙️ Module 2: Backpropagation Parameters")
+st.sidebar.markdown("Explore factors affecting Backpropagation training:")
+
+learning_rate = st.sidebar.select_slider(
+    "Learning Rate Co-efficient (η):",
+    options=[0.0001, 0.001, 0.01, 0.1, 0.5],
+    value=0.01
+)
+
+activation_function = st.sidebar.selectbox(
+    "Activation Function:",
+    options=['relu', 'logistic', 'tanh'],
+    index=0
+)
+
+hidden_layers = st.sidebar.radio(
+    "Network Architecture:",
+    options=["Single Layer (Perceptron: 8 nodes)", "Multilayer Perceptron (16, 8 nodes)"],
+    index=1
+)
+
+hidden_structure = (8,) if "Single" in hidden_layers else (16, 8)
+
+max_epochs = st.sidebar.slider("Max Training Epochs:", 10, 500, 200, step=10)
+
+# Train MLP Model
 @st.cache_resource
-def run_ga():
-    population = [[random.randint(8, 64), random.randint(4, 32), random.randint(0, 2), random.randint(0, 1)] for _ in range(8)]
-    best_acc, best_chrom, history = 0.0, None, []
-
-    for gen in range(5):
-        scores = [evaluate_chromosome(c) for c in population]
-        for idx, s in enumerate(scores):
-            if s > best_acc:
-                best_acc, best_chrom = s, population[idx]
-        history.append(best_acc)
-        sorted_pop = [c for _, c in sorted(zip(scores, population), reverse=True)]
-        parents = sorted_pop[:4]
-        population = parents + [[parents[0][0], parents[1][1], parents[0][2], parents[1][3]],
-                                [parents[1][0], parents[0][1], parents[1][2], parents[0][3]],
-                                [random.randint(8, 64), parents[0][1], parents[0][2], parents[0][3]],
-                                [parents[1][0], random.randint(4, 32), parents[1][2], parents[1][3]]]
-    return best_chrom, best_acc, history
-
-best_chrom, best_acc, ga_history = run_ga()
-
-@st.cache_resource
-def get_model(chrom):
-    clf = MLPClassifier(hidden_layer_sizes=(chrom[0], chrom[1]), activation=ACTIVATIONS[chrom[3]],
-                         learning_rate_init=LEARNING_RATES[chrom[2]], max_iter=300, random_state=42)
+def train_soft_model(structure, act, lr, epochs):
+    clf = MLPClassifier(
+        hidden_layer_sizes=structure,
+        activation=act,
+        solver='adam',
+        learning_rate_init=lr,
+        max_iter=epochs,
+        random_state=42
+    )
     clf.fit(X_train_scaled, y_train)
     return clf
 
-model = get_model(best_chrom)
+soft_model = train_soft_model(hidden_structure, activation_function, learning_rate, max_epochs)
+soft_preds = soft_model.predict(X_test_scaled)
+soft_accuracy = accuracy_score(y_test, soft_preds)
 
-# Sidebar
-st.sidebar.title("🧬 GA Optimization Panel")
-st.sidebar.metric("GA-Evolved Model Accuracy", f"{best_acc * 100:.2f}%")
-st.sidebar.markdown(f"**Optimal Layers:** `{best_chrom[0]} x {best_chrom[1]}`")
-st.sidebar.markdown(f"**Optimal Learning Rate ($\eta$):** `{LEARNING_RATES[best_chrom[2]]}`")
-st.sidebar.markdown(f"**Activation:** `{ACTIVATIONS[best_chrom[3]]}`")
+# -------------------------------------------------------------------
+# 4. PARADIGM COMPARISON DASHBOARD (MODULE 1)
+# -------------------------------------------------------------------
+st.subheader("📊 Paradigm Performance Comparison")
+col_acc1, col_acc2 = st.columns(2)
 
-fig_ga, ax_ga = plt.subplots(figsize=(4, 2.5))
-ax_ga.plot(ga_history, marker='s', color='#2b5c8f', linewidth=2)
-ax_ga.set_title("Genetic Fitness Convergence")
-ax_ga.set_xlabel("Generation")
-ax_ga.set_ylabel("Accuracy Score")
-ax_ga.grid(True, linestyle='--', alpha=0.6)
-st.sidebar.pyplot(fig_ga)
+with col_acc1:
+    st.metric(
+        label="Hard Computing (Rigid Rules)", 
+        value=f"{hard_accuracy * 100:.2f}%", 
+        delta="Crisp Logic"
+    )
 
-# Main UI
-col_in, col_out = st.columns([1, 1.2])
+with col_acc2:
+    st.metric(
+        label="Soft Computing (MLP Backpropagation)", 
+        value=f"{soft_accuracy * 100:.2f}%", 
+        delta=f"{(soft_accuracy - hard_accuracy) * 100:+.2f}% vs Hard"
+    )
 
-with col_in:
-    st.subheader("📋 Loan Application Parameters")
-    income = st.number_input("Annual Income ($)", 10000, 500000, 85000, 5000)
-    loan = st.number_input("Requested Loan Amount ($)", 5000, 1000000, 220000, 5000)
-    savings = st.number_input("Total Savings ($)", 0, 500000, 20000, 2500)
-    score = st.slider("Credit Score (FICO)", 300, 850, 640)
-    dti_pct = st.slider("Debt-to-Income Ratio (%)", 5, 70, 35)
-    employment = st.slider("Employment History (Years)", 0, 40, 4)
+st.divider()
 
-with col_out:
-    st.subheader("📊 Instant Decision Engine & Analytics")
-    if st.button("Evaluate Application", type="primary", use_container_width=True):
-        raw_input = np.array([[income, loan, score, dti_pct/100.0, employment, savings]])
+# -------------------------------------------------------------------
+# 5. INPUT FORM & DUAL PREDICTION UI
+# -------------------------------------------------------------------
+col_input, col_results = st.columns([1, 1.2])
+
+with col_input:
+    st.subheader("📋 Applicant Input Data")
+    income = st.number_input("Annual Income ($)", min_value=10000, max_value=500000, value=75000, step=5000)
+    loan = st.number_input("Requested Loan Amount ($)", min_value=1000, max_value=1000000, value=160000, step=5000)
+    score = st.slider("Credit Score (FICO)", min_value=300, max_value=850, value=640)
+    dti_percent = st.slider("Debt-to-Income Ratio (%)", min_value=10, max_value=70, value=42)
+    dti = dti_percent / 100.0
+
+with col_results:
+    st.subheader("🔍 Prediction Output")
+    
+    if st.button("Compare Systems", type="primary", use_container_width=True):
+        # Hard Computing Prediction
+        hard_result = hard_computing_predict(income, loan, score, dti)
+        hard_text = "APPROVED ✅" if hard_result == 1 else "REJECTED ❌"
+        
+        # Soft Computing Prediction
+        raw_input = np.array([[income, loan, score, dti]])
         scaled_input = scaler.transform(raw_input)
+        soft_result = soft_model.predict(scaled_input)[0]
+        soft_prob = soft_model.predict_proba(scaled_input)[0][1]
+        soft_text = "APPROVED ✅" if soft_result == 1 else "REJECTED ❌"
+
+        res_col1, res_col2 = st.columns(2)
+        with res_col1:
+            st.markdown("### Hard Computing")
+            st.info(f"**Status:** {hard_text}\n\n*Deterministic IF-THEN logic*")
         
-        pred = model.predict(scaled_input)[0]
-        prob = model.predict_proba(scaled_input)[0][1]
+        with res_col2:
+            st.markdown("### Soft Computing")
+            if soft_result == 1:
+                st.success(f"**Status:** {soft_text}\n\n**Confidence:** {soft_prob * 100:.1f}%")
+            else:
+                st.error(f"**Status:** {soft_text}\n\n**Confidence:** {(1 - soft_prob) * 100:.1f}%")
 
-        st.divider()
-        if pred == 1:
-            st.success(f"### Result: APPROVED ✅\n**Approval Confidence:** {prob * 100:.1f}%")
-        else:
-            st.error(f"### Result: REJECTED ❌\n**Approval Confidence:** {(1-prob) * 100:.1f}%")
-
-            # Counterfactual Analysis
-            st.warning("💡 **Actionable Recommendations for Approval:**")
-            if score < 660:
-                st.write(f"- Increase Credit Score to at least **660** (currently {score}).")
-            if loan > (income * 3.5):
-                st.write(f"- Lower requested loan amount to **${int(income * 3.5):,}**.")
-            if dti_pct > 30:
-                st.write(f"- Reduce monthly debt to bring DTI ratio under **30%**.")
-
-        # Relative Impact Chart
-        st.subheader("🔍 Input Impact Breakdown")
-        feature_names = ['Income', 'Loan Amount', 'Credit Score', 'DTI Ratio', 'Employment', 'Savings']
-        impacts = scaled_input[0] - np.mean(X_train_scaled, axis=0)
-        
-        fig_imp, ax_imp = plt.subplots(figsize=(6, 3))
-        colors = ['#2ca02c' if x > 0 else '#d62728' for x in impacts]
-        ax_imp.barh(feature_names, impacts, color=colors)
-        ax_imp.axvline(0, color='black', linewidth=0.8, linestyle='--')
-        ax_imp.set_xlabel("Impact relative to baseline dataset mean")
-        st.pyplot(fig_imp)
+        # -------------------------------------------------------------------
+        # 6. MODULE 2: BACKPROPAGATION LOSS CURVE
+        # -------------------------------------------------------------------
+        st.subheader("📈 Backpropagation Loss Curve")
+        fig, ax = plt.subplots(figsize=(6, 3))
+        ax.plot(soft_model.loss_curve_, color='#1f77b4', linewidth=2)
+        ax.set_title(f"Gradient Descent Convergence (η={learning_rate}, Act={activation_function})")
+        ax.set_xlabel("Epochs")
+        ax.set_ylabel("Training Error (Loss)")
+        ax.grid(True, linestyle='--', alpha=0.6)
+        st.pyplot(fig)
