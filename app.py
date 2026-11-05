@@ -1,8 +1,3 @@
-!pip install streamlit pandas numpy scikit-learn matplotlib pyngrok
-
-
-
-%%writefile app.py
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -23,7 +18,7 @@ st.markdown("**Module:** Neural Networks (Multi-Layer Perceptron trained with Ba
 def train_model():
     np.random.seed(42)
     n_samples = 1000
-
+    
     income = np.random.randint(20000, 150000, n_samples)
     loan = np.random.randint(5000, 500000, n_samples)
     score = np.random.randint(300, 850, n_samples)
@@ -32,13 +27,13 @@ def train_model():
     approved = ((score > 650) & (dti < 0.45) & (loan < income * 4)).astype(int)
 
     df = pd.DataFrame({
-        'Income': income,
-        'LoanAmount': loan,
-        'CreditScore': score,
-        'DTIRatio': dti,
+        'Income': income, 
+        'LoanAmount': loan, 
+        'CreditScore': score, 
+        'DTIRatio': dti, 
         'Approved': approved
     })
-
+    
     X = df[['Income', 'LoanAmount', 'CreditScore', 'DTIRatio']]
     y = df['Approved']
 
@@ -49,18 +44,18 @@ def train_model():
     X_test_scaled = scaler.transform(X_test)
 
     model = MLPClassifier(
-        hidden_layer_sizes=(16, 8),
-        activation='relu',
-        solver='adam',
-        learning_rate_init=0.01,
-        max_iter=300,
+        hidden_layer_sizes=(16, 8), 
+        activation='relu', 
+        solver='adam', 
+        learning_rate_init=0.01, 
+        max_iter=300, 
         random_state=42
     )
     model.fit(X_train_scaled, y_train)
-
+    
     y_pred = model.predict(X_test_scaled)
     acc = accuracy_score(y_test, y_pred)
-
+    
     return scaler, model, acc
 
 scaler, model, accuracy = train_model()
@@ -95,7 +90,7 @@ with col2:
 if st.button("Predict Eligibility", type="primary"):
     raw_input = np.array([[income, loan, score, dti]])
     scaled_input = scaler.transform(raw_input)
-
+    
     prediction = model.predict(scaled_input)[0]
     prob = model.predict_proba(scaled_input)[0][1]
 
@@ -104,16 +99,3 @@ if st.button("Predict Eligibility", type="primary"):
         st.success(f"✅ **APPROVED** — Approval Confidence: {prob * 100:.1f}%")
     else:
         st.error(f"❌ **REJECTED** — Approval Confidence: {prob * 100:.1f}%")
-
-
-Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
-
-⠼⠴⠦Need to install the following packages:
-localtunnel@2.0.2
-Ok to proceed? (y) 2026-11-05 14:34:18.627 Uvicorn server started on :::8501
-
-  You can now view your Streamlit app in your browser.
-
-  Local URL: http://localhost:8501
-  Network URL: http://172.28.0.12:8501
-  External URL: http://136.109.127.80:8501
