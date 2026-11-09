@@ -11,6 +11,8 @@ from sklearn.metrics import accuracy_score
 # Page Configuration
 st.set_page_config(page_title="Enterprise Neuro-Fuzzy-Genetic Decision System", page_icon="🧬", layout="wide")
 
+st.title("🧬 Multi-Objective Neuro-Fuzzy-Genetic Loan Decision Engine")
+
 
 # -------------------------------------------------------------------
 # 1. SYNTHETIC DATASET GENERATION
