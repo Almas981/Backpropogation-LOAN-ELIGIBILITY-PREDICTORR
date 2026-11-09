@@ -11,8 +11,6 @@ from sklearn.metrics import accuracy_score
 # Page Configuration
 st.set_page_config(page_title="Enterprise Neuro-Fuzzy-Genetic Decision System", page_icon="🧬", layout="wide")
 
-st.title("🧬 Multi-Objective Neuro-Fuzzy-Genetic Loan Decision Engine")
-st.markdown("**Syllabus Coverage:** Module 1 (Hard vs. Soft), Module 2 (Backpropagation MLP), Module 3 (Fuzzy Logic FIS), & Module 4 (Genetic Algorithms / MOOP)")
 
 # -------------------------------------------------------------------
 # 1. SYNTHETIC DATASET GENERATION
